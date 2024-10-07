@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Propietats JS, Compte Enrere i Rellotge</title>
+</head>
+<body>
+
+    <div id="taula_propietats"></div>
+
+    <div id="temporitzador">00:00</div>
+
+    <form id="tempsForm">
+        <input type="number" id="minuts" placeholder="Minuts" min="0">
+        <input type="number" id="segons" placeholder="Segons" min="0">
+        <button type="button" id="establir">Establir</button>
+    </form>
+
+    <button id="iniciar">Iniciar</button>
+    <button id="pausar">Pausar</button>
+    <button id="restablir">Restablir</button>
+
+    <h2>Rellotge Actual</h2>
+    <div id="rellotge">00:00:00</div>
+
+    <h2>Configura la teva Alarma</h2>
+    <form id="alarmaForm">
+        <label for="alarmaHora">Hora:</label>
+        <input type="number" id="alarmaHora" min="0" max="23" placeholder="HH">
+        <label for="alarmaMinuts">Minuts:</label>
+        <input type="number" id="alarmaMinuts" min="0" max="59" placeholder="MM">
+        
+        <label for="musica">Música:</label>
+        <select id="musica">
+            <option src="Утро (speed up)_IVM36qAkVz8.mp3">So 1</option>
+            <option src="2_5357585167588275292.flac">So 2</option>
+        </select>
+
+        <label for="volum">Volum:</label>
+        <input type="range" id="volum" min="0" max="1" step="0.1" value="0.5">
+
+        <button type="button" id="configurarAlarma">Configurar Alarma</button>
+        <button type="button" id="aturarAlarma">Aturar Alarma</button>
+    </form>
+
+    <audio id="alarma"></audio>
+
+    <script>
+        function crearTaulaPropietats() {
+            const taula = document.createElement('table');
+            taula.setAttribute('border', '1');
+            taula.setAttribute('cellpadding', '10');
+            taula.style.width = '50%';
+            taula.style.margin = '20px 0';
+            taula.style.borderCollapse = 'collapse';
+
+            const filaCapcalera = taula.insertRow();
+            const capcaleraCol1 = document.createElement('th');
+            const capcaleraCol2 = document.createElement('th');
+            capcaleraCol1.textContent = 'Propietat';
+            capcaleraCol2.textContent = 'Valor';
+            filaCapcalera.appendChild(capcaleraCol1);
+            filaCapcalera.appendChild(capcaleraCol2);
+
+            const propietats = [
+                { text: 'Valor màxim que pot tenir un número JS', valor: () => Number.MAX_VALUE },
+                { text: 'Altura total de la pantalla', valor: () => window.screen.height },
+                { text: 'Altura interna de la finestra', valor: () => window.innerHeight },
+                { text: 'URL de la web', valor: () => window.location.href }
+            ];
+
+            propietats.forEach(propietat => {
+                const fila = taula.insertRow();
+                const celdaText = fila.insertCell(0);
+                const celdaValor = fila.insertCell(1);
+                celdaText.textContent = propietat.text;
+                celdaValor.textContent = propietat.valor();
+            });
+
+            document.getElementById('taula_propietats').appendChild(taula);
+        }
+        crearTaulaPropietats();
+
+        let tempsTotal = 0;
+        let intervalID = null;
+        const temporitzador = document.getElementById('temporitzador');
+        const alarma = document.getElementById('alarma');
+
+        function actualitzarTemporitzador() {
+            let minuts = Math.floor(tempsTotal / 60);
+            let segons = tempsTotal % 60;
+            temporitzador.textContent = `${minuts.toString().padStart(2, '0')}:${segons.toString().padStart(2, '0')}`;
+        }
+
+        function iniciarTemporitzador() {
+            if (tempsTotal > 0 && !intervalID) {
+                intervalID = setInterval(() => {
+                    if (tempsTotal > 0) {
+                        tempsTotal--;
+                        actualitzarTemporitzador();
+                    } else {
+                        clearInterval(intervalID);
+                        alarma.play();
+                        intervalID = null;
+                    }
+                }, 1000);
+            }
+        }
+
+        function pausarTemporitzador() {
+            if (intervalID) {
+                clearInterval(intervalID);
+                intervalID = null;
+            }
+        }
+
+        function restablirTemporitzador() {
+            pausarTemporitzador();
+            tempsTotal = 0;
+            actualitzarTemporitzador();
+        }
+
+        document.getElementById('establir').addEventListener('click', () => {
+            const minutsInput = document.getElementById('minuts').value;
+            const segonsInput = document.getElementById('segons').value;
+
+            const minuts = parseInt(minutsInput) || 0;
+            const segons = parseInt(segonsInput) || 0;
+
+            tempsTotal = (minuts * 60) + segons;
+            actualitzarTemporitzador();
+        });
+
+        document.getElementById('iniciar').addEventListener('click', iniciarTemporitzador);
+        document.getElementById('pausar').addEventListener('click', pausarTemporitzador);
+        document.getElementById('restablir').addEventListener('click', restablirTemporitzador);
+
+        let alarmaHora, alarmaMinuts;
+        let alarmaIntervalID = null;
+
+        function actualitzarRellotge() {
+            const ara = new Date();
+            const hores = ara.getHours().toString().padStart(2, '0');
+            const minuts = ara.getMinutes().toString().padStart(2, '0');
+            const segons = ara.getSeconds().toString().padStart(2, '0');
+            document.getElementById('rellotge').textContent = `${hores}:${minuts}:${segons}`;
+
+            if (hores == alarmaHora && minuts == alarmaMinuts) {
+                alarma.play();
+            }
+        }
+
+        setInterval(actualitzarRellotge, 1000); 
+
+        document.getElementById('configurarAlarma').addEventListener('click', () => {
+            alarmaHora = document.getElementById('alarmaHora').value.padStart(2, '0');
+            alarmaMinuts = document.getElementById('alarmaMinuts').value.padStart(2, '0');
+            const musicaSeleccionada = document.getElementById('musica').value;
+            const volumSeleccionat = document.getElementById('volum').value;
+
+            alarma.src = musicaSeleccionada;
+            alarma.volume = volumSeleccionat;
+
+            alert(`Alarma configurada per a les ${alarmaHora}:${alarmaMinuts}`);
+        });
+
+        document.getElementById('aturarAlarma').addEventListener('click', () => {
+            alarma.pause();
+            alarma.currentTime = 0;
+        });
+
+    </script>
+
+</body>
+</html>
